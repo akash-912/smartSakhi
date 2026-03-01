@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase'; // Adjust this path if your supabase client is somewhere else!
 import { useSyllabus } from '../features/syllabus/api/useSyllabus'; 
 import { useProgress } from '../features/syllabus/api/useProgress'; 
 import { Card } from '../components/ui/Card.jsx';
@@ -9,7 +10,10 @@ import {
   CheckCircle, 
   Circle, 
   Youtube,
-  Layers
+  Layers,
+  FileText,
+  Download,
+  BookMarked
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordian.jsx';
 import { Progress } from '../components/ui/Progress.jsx';
@@ -17,6 +21,9 @@ import { Progress } from '../components/ui/Progress.jsx';
 export function SyllabusPage({ userBranch, userSemester }) {
   const [selectedBranch, setSelectedBranch] = useState(userBranch || 'Computer Science Engineering');
   const [selectedSemester, setSelectedSemester] = useState(userSemester || 3);
+  
+  // New state to hold our fetched PDFs and PYQs
+  const [materials, setMaterials] = useState([]);
 
   // Fetch real data from Supabase!
   const { syllabus, loading: loadingSyllabus, error } = useSyllabus(selectedBranch, selectedSemester);
@@ -28,6 +35,23 @@ export function SyllabusPage({ userBranch, userSemester }) {
     { id: 'ece', name: 'Electronics and Communication' },
     { id: 'me', name: 'Mechanical Engineering' },
   ];
+
+  // Fetch Study Materials from Supabase whenever branch or semester changes
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      const { data, error } = await supabase
+        .from('study_materials')
+        .select('*')
+        .eq('branch', selectedBranch)
+        .eq('semester', selectedSemester);
+
+      if (!error && data) {
+        setMaterials(data);
+      }
+    };
+    
+    fetchMaterials();
+  }, [selectedBranch, selectedSemester]);
 
   const handleTopicToggle = async (topicId) => {
     const isCompleted = completedTopics.has(topicId);
@@ -70,7 +94,7 @@ export function SyllabusPage({ userBranch, userSemester }) {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Syllabus Browser</h1>
           <p className="text-muted-foreground">
-            Explore subjects, units, and topics for {selectedBranch} - Semester {selectedSemester}
+            Explore subjects, units, and resources for {selectedBranch} - Semester {selectedSemester}
           </p>
         </div>
 
@@ -123,6 +147,11 @@ export function SyllabusPage({ userBranch, userSemester }) {
           ) : (
             syllabus.map((subject) => {
               const currentProgress = calculateSubjectProgress(subject);
+              
+              // Filter materials specifically for this subject
+              const subjectMaterials = materials.filter(m => m.subject_name === subject.name);
+              const pyqs = subjectMaterials.filter(m => m.type === 'PYQ');
+              const notes = subjectMaterials.filter(m => m.type === 'Note');
 
               return (
                 <Card key={subject.id} className="overflow-hidden border-border">
@@ -166,14 +195,79 @@ export function SyllabusPage({ userBranch, userSemester }) {
                   </div>
 
                   <div className="p-6">
-                    <Accordion type="single" collapsible className="w-full">
+                    <Accordion type="single" collapsible className="w-full space-y-2">
+                      
+                      {/* NEW: Study Materials Section (Only renders if files exist) */}
+                      {subjectMaterials.length > 0 && (
+                        <AccordionItem value="materials" className="border-border bg-primary/5 rounded-lg px-2">
+                          <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center justify-between w-full pr-4">
+                              <div className="flex items-center gap-3">
+                                <BookMarked className="w-5 h-5 text-primary" />
+                                <span className="font-semibold text-left text-foreground">
+                                  Study Materials (PYQs & Notes)
+                                </span>
+                              </div>
+                              <Badge variant="outline" className="text-primary border-primary/30 bg-background">
+                                {subjectMaterials.length} Files
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-4 pt-2 pb-2">
+                              
+                              {/* PYQs Sub-section */}
+                              {pyqs.length > 0 && (
+                                <div>
+                                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Previous Year Questions</h4>
+                                  <div className="grid sm:grid-cols-2 gap-2">
+                                    {pyqs.map(pyq => (
+                                      <div key={pyq.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-lg hover:border-primary/50 transition-colors">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                          <FileText className="w-4 h-4 text-orange-500 shrink-0" />
+                                          <span className="text-sm font-medium text-foreground truncate">{pyq.title}</span>
+                                        </div>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => window.open(pyq.file_url, '_blank')}>
+                                          <Download className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Notes Sub-section */}
+                              {notes.length > 0 && (
+                                <div>
+                                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1 mt-4">PDF Notes</h4>
+                                  <div className="grid sm:grid-cols-2 gap-2">
+                                    {notes.map(note => (
+                                      <div key={note.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-lg hover:border-primary/50 transition-colors">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                          <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                                          <span className="text-sm font-medium text-foreground truncate">{note.title}</span>
+                                        </div>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => window.open(note.file_url, '_blank')}>
+                                          <Download className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+
+                      {/* Regular Units List */}
                       {subject.units.map((unit) => {
-                        // Calculate completed topics per unit dynamically
                         const completedTopicsInUnit = unit.topics.filter(t => completedTopics.has(t.id)).length;
                         const totalTopicsInUnit = unit.topics.length;
 
                         return (
-                          <AccordionItem key={unit.id} value={`unit-${unit.id}`} className="border-border">
+                          <AccordionItem key={unit.id} value={`unit-${unit.id}`} className="border-border px-2">
                             <AccordionTrigger className="hover:no-underline">
                               <div className="flex items-center justify-between w-full pr-4">
                                 <div className="flex items-center gap-3">
