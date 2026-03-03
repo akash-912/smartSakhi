@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase'; // Adjust this path if your supabase client is somewhere else!
+import { supabase } from '../lib/supabase'; 
 import { useSyllabus } from '../features/syllabus/api/useSyllabus'; 
-import { useProgress } from '../features/syllabus/api/useProgress'; 
+import { useProgress } from '../features/syllabus/api/useProgress';
+// 1. Import the new hook
+import { useBranches } from '../features/syllabus/hooks/useBranches'; 
 import { Card } from '../components/ui/Card.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
@@ -15,29 +17,21 @@ import {
   Download,
   BookMarked
 } from 'lucide-react';
-// thsi is main branch
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordian.jsx';
 import { Progress } from '../components/ui/Progress.jsx';
 
 export function SyllabusPage({ userBranch, userSemester }) {
+  // 2. Use the hook to get real branches from DB
+  const { branches, loading: loadingBranches } = useBranches();
+  
   const [selectedBranch, setSelectedBranch] = useState(userBranch || 'Computer Science Engineering');
   const [selectedSemester, setSelectedSemester] = useState(userSemester || 3);
-  
-  // New state to hold our fetched PDFs and PYQs
   const [materials, setMaterials] = useState([]);
 
-  // Fetch real data from Supabase!
   const { syllabus, loading: loadingSyllabus, error } = useSyllabus(selectedBranch, selectedSemester);
   const { completedTopics, toggleTopic } = useProgress();
 
-  const branches = [
-    { id: 'cse', name: 'Computer Science Engineering' },
-    { id: 'it', name: 'Information Technology' },
-    { id: 'ece', name: 'Electronics and Communication' },
-    { id: 'me', name: 'Mechanical Engineering' },
-  ];
-
-  // Fetch Study Materials from Supabase whenever branch or semester changes
+  // Fetch Study Materials
   useEffect(() => {
     const fetchMaterials = async () => {
       const { data, error } = await supabase
@@ -59,23 +53,20 @@ export function SyllabusPage({ userBranch, userSemester }) {
     await toggleTopic(topicId, isCompleted);
   };
 
-  // Helper function to calculate subject progress dynamically
   const calculateSubjectProgress = (subject) => {
     let totalTopicsCount = 0;
     let completedCount = 0;
-
     subject.units.forEach(unit => {
       unit.topics.forEach(topic => {
         totalTopicsCount++;
         if (completedTopics.has(topic.id)) completedCount++;
       });
     });
-
     if (totalTopicsCount === 0) return 0;
     return Math.round((completedCount / totalTopicsCount) * 100);
   };
 
-  if (loadingSyllabus) {
+  if (loadingSyllabus || loadingBranches) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-200">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -105,6 +96,7 @@ export function SyllabusPage({ userBranch, userSemester }) {
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Select Branch</label>
               <div className="grid grid-cols-2 gap-2">
+                {/* 3. Map over the DYNAMIC branches from Supabase */}
                 {branches.map((branch) => (
                   <Button
                     key={branch.id}
@@ -114,7 +106,8 @@ export function SyllabusPage({ userBranch, userSemester }) {
                       selectedBranch === branch.name ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'
                     }`}
                   >
-                    {branch.name.split(' ').slice(0, 2).join(' ')}
+                    {/* Display logic: Use short_code if available, else first 2 words */}
+                    {branch.short_code || branch.name.split(' ').slice(0, 2).join(' ')}
                   </Button>
                 ))}
               </div>
@@ -149,7 +142,6 @@ export function SyllabusPage({ userBranch, userSemester }) {
             syllabus.map((subject) => {
               const currentProgress = calculateSubjectProgress(subject);
               
-              // Filter materials specifically for this subject
               const subjectMaterials = materials.filter(m => m.subject_name === subject.name);
               const pyqs = subjectMaterials.filter(m => m.type === 'PYQ');
               const notes = subjectMaterials.filter(m => m.type === 'Note');
@@ -167,7 +159,7 @@ export function SyllabusPage({ userBranch, userSemester }) {
                             <h3 className="text-xl font-bold text-foreground">{subject.name}</h3>
                             <div className="flex flex-wrap gap-2 mt-2">
                               <Badge variant="secondary" className="bg-background text-muted-foreground border-border">
-                                {subject.code || `SUB-${subject.id}`}
+                                {subject.code || `SUB-${subject.id.slice(0,4)}`}
                               </Badge>
                               <Badge variant="secondary" className="bg-background text-muted-foreground border-border">
                                 {subject.credits} Credits
@@ -198,7 +190,7 @@ export function SyllabusPage({ userBranch, userSemester }) {
                   <div className="p-6">
                     <Accordion type="single" collapsible className="w-full space-y-2">
                       
-                      {/* NEW: Study Materials Section (Only renders if files exist) */}
+                      {/* Study Materials Section */}
                       {subjectMaterials.length > 0 && (
                         <AccordionItem value="materials" className="border-border bg-primary/5 rounded-lg px-2">
                           <AccordionTrigger className="hover:no-underline">
@@ -216,8 +208,6 @@ export function SyllabusPage({ userBranch, userSemester }) {
                           </AccordionTrigger>
                           <AccordionContent>
                             <div className="space-y-4 pt-2 pb-2">
-                              
-                              {/* PYQs Sub-section */}
                               {pyqs.length > 0 && (
                                 <div>
                                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Previous Year Questions</h4>
@@ -236,8 +226,6 @@ export function SyllabusPage({ userBranch, userSemester }) {
                                   </div>
                                 </div>
                               )}
-
-                              {/* Notes Sub-section */}
                               {notes.length > 0 && (
                                 <div>
                                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1 mt-4">PDF Notes</h4>
@@ -256,7 +244,6 @@ export function SyllabusPage({ userBranch, userSemester }) {
                                   </div>
                                 </div>
                               )}
-
                             </div>
                           </AccordionContent>
                         </AccordionItem>
@@ -286,7 +273,6 @@ export function SyllabusPage({ userBranch, userSemester }) {
                               <div className="space-y-2 pt-2">
                                 {unit.topics.map((topic) => {
                                   const isTopicCompleted = completedTopics.has(topic.id);
-                                  
                                   return (
                                     <div
                                       key={topic.id}
