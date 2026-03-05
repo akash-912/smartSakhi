@@ -14,6 +14,7 @@ import { AIAssistant } from './features/ai-tutor/components/AIAssistant.jsx';
 import { PlannerPage } from './features/exam-planner/components/PlannerPage.jsx';
 import { AdminUploadPage } from './pages/AdminUploadPage.jsx';
 import { UpdatePasswordPage } from './features/auth/components/UpdatePasswordPage.jsx';
+import { PlannerSidebar } from './features/daily-planner/components/PlannerSidebar.jsx';
 
 function AppContent() {
   const { user, logOut } = useAuth();
@@ -27,6 +28,11 @@ function AppContent() {
 
   const [userBranch, setUserBranch] = useState('Computer Science Engineering');
   const [userSemester, setUserSemester] = useState(3);
+  //daily-task-tracker
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
+  const togglePlanner = () => {
+    setIsPlannerOpen(prev => !prev);
+  };
 
   // --- RECOVERY MODE LISTENER ---
   useEffect(() => {
@@ -105,8 +111,11 @@ function AppContent() {
           isLoggedIn={!!user}
           onLogout={handleLogout}
           userName={userName}
+          openPlanner={togglePlanner}
         />
       )}
+
+      <PlannerSidebar isOpen={isPlannerOpen} />
 
       <Routes>
         {/* PUBLIC ROUTE */}

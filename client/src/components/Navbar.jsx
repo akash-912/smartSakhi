@@ -2,11 +2,13 @@ import { LogOut, User, BookOpen, Brain, Home, CalendarDays } from 'lucide-react'
 import { Button } from './ui/Button.jsx';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import { usePlanner } from "../features/daily-planner/context/PlannerContext.jsx";
 
 
-export function Navbar({ currentPage, onNavigate, isLoggedIn, onLogout, userName }) {
+export function Navbar({ currentPage, onNavigate, isLoggedIn, onLogout, userName, openPlanner }) {
   if (!isLoggedIn) return null;
   const { theme, toggleTheme } = useTheme();
+  const { completedTasks, totalTasks, streak } = usePlanner();
   return (
     <nav className="bg-background border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,10 +65,13 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn, onLogout, userName
             className="p-2 rounded-full hover:bg-muted text-foreground transition-colors"
           >
             {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-          </button>
+          </button>          
             <span className="hidden sm:block text-sm text-foreground">
               Welcome, <span className="font-semibold">{userName}</span>
             </span>
+            <button onClick={openPlanner}>
+            🔥{streak} 📅({completedTasks}/{totalTasks})
+            </button>
             <Button variant="outline" onClick={onLogout} className="gap-2">
               <LogOut className="w-4 h-4" />
               Logout
