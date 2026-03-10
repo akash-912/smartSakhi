@@ -69,19 +69,9 @@ function AppContent() {
     }
   }, [user]);
 
-  // Mock Data for Dashboard (Replace with real data later)
-  const [subjectsProgress] = useState([
-    { name: 'Data Structures', progress: 65, totalTopics: 27, completedTopics: 18 },
-    { name: 'DBMS', progress: 45, totalTopics: 18, completedTopics: 8 },
-    { name: 'Operating Systems', progress: 80, totalTopics: 15, completedTopics: 12 },
-    { name: 'Computer Networks', progress: 30, totalTopics: 21, completedTopics: 6 },
-    { name: 'Software Engineering', progress: 55, totalTopics: 12, completedTopics: 7 },
-    { name: 'Web Technologies', progress: 70, totalTopics: 20, completedTopics: 14 },
-  ]);
+  
 
-  const overallProgress = Math.round(
-    subjectsProgress.reduce((acc, subject) => acc + subject.progress, 0) / subjectsProgress.length
-  );
+  
 
   const userName = user?.user_metadata?.full_name || 'Student';
   const userEmail = user?.email || '';
@@ -145,7 +135,6 @@ function AppContent() {
                   userName={userName}
                   userBranch={userBranch}
                   userSemester={userSemester}
-                  overallProgress={overallProgress}
                   onNavigate={handleNavigate}
                 />
               </ProtectedRoute>
@@ -191,10 +180,10 @@ function AppContent() {
           element={
             isRecoveryMode ? <Navigate to="/update-password" replace /> : (
               <ProtectedRoute>
-                <PlannerPage userSemester={userSemester} />
+                <PlannerPage userBranch={userBranch} userSemester={userSemester} />
               </ProtectedRoute>
             )
-          } 
+          }  
         />
 
         <Route 

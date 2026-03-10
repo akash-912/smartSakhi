@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { CircularProgress } from '../../../components/ui/CircularProgress.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/Tab.jsx';
 
-export function PlannerPage({ userSemester = 3, userBranch = 'Computer Science Engineering' }) {
+export function PlannerPage({ userSemester , userBranch }) {
   // 1. Backend Hooks
   const [selectedExam, setSelectedExam] = useState('Mid-Sem 1'); 
   const { syllabus, loading: loadingSyllabus } = useSyllabus(userBranch, userSemester);

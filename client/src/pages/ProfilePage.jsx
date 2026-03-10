@@ -6,6 +6,8 @@ import { Card } from '../components/ui/Card.jsx';
 import { CircularProgress } from '../components/ui/CircularProgress.jsx';
 import { User, Mail, GraduationCap, Calendar, Award, Book } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select.jsx';
+import { supabase } from '../lib/supabase'; // <-- Add this import
+
 
 export function ProfilePage({
   userName,
@@ -16,6 +18,8 @@ export function ProfilePage({
   onSemesterChange,
 }) {
 
+
+  
   // 2. Fetch Dynamic Branches
   const { branches, loading: loadingBranches } = useBranches();
 
@@ -76,6 +80,22 @@ export function ProfilePage({
     );
   }
 
+
+  const handleBranchUpdate = async (newBranch) => {
+    onBranchChange(newBranch); // 1. Update UI instantly
+    await supabase.auth.updateUser({ 
+      data: { branch: newBranch } 
+    }); // 2. Save to Supabase forever
+  };
+
+  // Save new semester to Database AND React State
+  const handleSemesterUpdate = async (newSem) => {
+    onSemesterChange(newSem); 
+    await supabase.auth.updateUser({ 
+      data: { semester: newSem } 
+    }); 
+  };
+
   return (
     <div className="min-h-screen bg-background transition-colors duration-200 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -127,7 +147,7 @@ export function ProfilePage({
               <label className="block text-sm font-medium text-foreground mb-2">
                 Select Branch
               </label>
-              <Select value={userBranch} onValueChange={onBranchChange}>
+              <Select value={userBranch} onValueChange={handleBranchUpdate}>
                 <SelectTrigger className="bg-background text-foreground border-border">
                   <SelectValue />
                 </SelectTrigger>
@@ -145,7 +165,7 @@ export function ProfilePage({
               <label className="block text-sm font-medium text-foreground mb-2">
                 Select Semester
               </label>
-              <Select value={userSemester.toString()} onValueChange={(val) => onSemesterChange(Number(val))}>
+              <Select value={userSemester.toString()} onValueChange={(val) => handleSemesterUpdate(Number(val))}>
                 <SelectTrigger className="bg-background text-foreground border-border">
                   <SelectValue />
                 </SelectTrigger>
@@ -174,13 +194,20 @@ export function ProfilePage({
             {dynamicSubjectsProgress.map((subject, index) => (
               <Card key={index} className="p-6 hover:shadow-md transition-shadow border-border">
                 <div className="flex flex-col items-center">
+                  
+                  {/* 1. EXPLICITLY RENDER THE SUBJECT NAME HERE */}
+                  <h3 className="text-lg font-bold text-foreground text-center mb-4 h-14 flex items-center justify-center">
+                    {subject.name}
+                  </h3>
+
+                  {/* 2. Render the circle without the label prop */}
                   <CircularProgress
                     percentage={subject.progress}
-                    size={140}
+                    size={120}
                     strokeWidth={10}
-                    label={subject.name}
                   />
-                  <div className="mt-4 w-full space-y-2">
+                  
+                  <div className="mt-6 w-full space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Completed Topics:</span>
                       <span className="font-semibold text-foreground">
