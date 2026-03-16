@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
-import { Heart, MessageCircle, ShieldAlert, Send, Sparkles, Award, UserCircle2 } from 'lucide-react';
+import { Heart, MessageCircle, ShieldAlert, Send, Sparkles, Award, UserCircle2, Trash2 } from 'lucide-react';
 
 const getRelativeTime = (dateString) => {
   if (!dateString) return 'Just now';
@@ -21,8 +21,7 @@ export function SafeSpacePage({ userName }) {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [activeReplyId, setActiveReplyId] = useState(null);
-
-  const [userLikes, setUserLikes] = useState(new Set());
+  const [userLikes, setUserLikes] = useState(new Set()); 
 
   const [posts, setPosts] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -35,12 +34,11 @@ export function SafeSpacePage({ userName }) {
   const fetchData = async () => {
     setLoading(true);
     
-    // Now pulling user_id and likes_count for the replies!
     const { data: postsData } = await supabase
       .from('community_posts')
       .select(`
-        id, content, is_anonymous, author_name, created_at,
-        community_replies ( id, content, author_name, created_at, user_id, likes_count )
+        id, user_id, content, is_anonymous, author_name, created_at,
+        community_replies ( id, user_id, content, author_name, created_at, likes_count )
       `)
       .order('created_at', { ascending: false });
 
@@ -104,26 +102,22 @@ export function SafeSpacePage({ userName }) {
       setPosts(updatedPosts);
       setReplyText('');
       setActiveReplyId(null);
-      // Notice: No points awarded here anymore!
     }
   };
 
-  // NEW FUNCTION: Handle Liking a Reply
   const handleReplyLike = async (postId, replyId, replyAuthorId, replyAuthorName) => {
     if (!user) return;
 
     const isCurrentlyLiked = userLikes.has(replyId);
     
-    // 1. Update our local memory of what the user has liked
     const newLikes = new Set(userLikes);
     if (isCurrentlyLiked) {
-      newLikes.delete(replyId); // Unlike
+      newLikes.delete(replyId);
     } else {
-      newLikes.add(replyId); // Like
+      newLikes.add(replyId);
     }
     setUserLikes(newLikes);
 
-    // 2. Optimistic UI Update: Add or subtract 1 instantly
     setPosts(posts.map(post => {
       if (post.id === postId) {
         return {
@@ -144,7 +138,6 @@ export function SafeSpacePage({ userName }) {
       return post;
     }));
 
-    // 3. Trigger the SQL function in the background
     await supabase.rpc('toggle_reply_like', { 
       r_id: replyId, 
       r_author_id: replyAuthorId, 
@@ -153,6 +146,56 @@ export function SafeSpacePage({ userName }) {
     });
 
     fetchLeaderboard();
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+    const { error } = await supabase
+      .from('community_posts')
+      .delete()
+      .eq('id', postId)
+      .eq('user_id', user.id); 
+
+    if (!error) {
+      setPosts(posts.filter(post => post.id !== postId));
+    }
+  };
+
+  // UPDATED: Delete Reply Function
+  const handleDeleteReply = async (postId, replyId, likesCount) => {
+    if (!window.confirm("Are you sure you want to delete this reply?")) return;
+
+    // 1. Delete from DB (The .eq('user_id', user.id) ensures they CANNOT delete someone else's reply)
+    const { error } = await supabase
+      .from('community_replies')
+      .delete()
+      .eq('id', replyId)
+      .eq('user_id', user.id);
+
+    if (!error) {
+      // 2. Remove from UI
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            community_replies: post.community_replies.filter(reply => reply.id !== replyId)
+          };
+        }
+        return post;
+      }));
+
+      // 3. Deduct the points! (Likes * 10 points)
+      if (likesCount > 0) {
+        const pointsToDeduct = -(likesCount * 10);
+        await supabase.rpc('add_compassion_points', { 
+          user_uuid: user.id, 
+          u_name: userName, 
+          points_to_add: pointsToDeduct 
+        });
+        fetchLeaderboard();
+      }
+    }
   };
 
   if (loading) {
@@ -193,11 +236,13 @@ export function SafeSpacePage({ userName }) {
                 rows={3}
               />
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <label className="flex items-center gap-2 cursor-pointer group"
-                        onClick={(e) => {
-                        e.preventDefault(); // Prevents double-clicking issues
-                        setIsAnonymous(!isAnonymous);
-                    }}>
+                <label 
+                  className="flex items-center gap-2 cursor-pointer group"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsAnonymous(!isAnonymous);
+                  }}
+                >
                   <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAnonymous ? 'bg-indigo-500' : 'bg-muted-foreground/30 dark:bg-muted'}`}>
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAnonymous ? 'translate-x-6' : 'translate-x-1'}`} />
                   </div>
@@ -205,7 +250,6 @@ export function SafeSpacePage({ userName }) {
                     <ShieldAlert className="w-4 h-4" /> Post Anonymously
                   </span>
                 </label>
-                
                 
                 <Button onClick={handlePostSubmit} disabled={!newPost.trim()} className="w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-xl gap-2 px-6 border-none disabled:opacity-50">
                   <Send className="w-4 h-4" /> Share
@@ -222,15 +266,29 @@ export function SafeSpacePage({ userName }) {
                   
                   {/* Main Post Bubble */}
                   <Card className={`p-5 sm:p-6 shadow-sm rounded-3xl border-transparent ${post.is_anonymous ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-card border-border'}`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${post.is_anonymous ? 'bg-indigo-200 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'}`}>
-                        {post.is_anonymous ? <ShieldAlert className="w-5 h-5" /> : <UserCircle2 className="w-6 h-6" />}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${post.is_anonymous ? 'bg-indigo-200 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'}`}>
+                          {post.is_anonymous ? <ShieldAlert className="w-5 h-5" /> : <UserCircle2 className="w-6 h-6" />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">{post.author_name}</p>
+                          <p className="text-xs text-muted-foreground">{getRelativeTime(post.created_at)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-foreground">{post.author_name}</p>
-                        <p className="text-xs text-muted-foreground">{getRelativeTime(post.created_at)}</p>
-                      </div>
+                      
+                      {/* Delete Post Button */}
+                      {post.user_id === user?.id && (
+                        <button 
+                          onClick={() => handleDeletePost(post.id)}
+                          className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors"
+                          title="Delete Post"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
+                    
                     <p className="text-foreground/90 leading-relaxed mb-4">{post.content}</p>
                     
                     <div className="flex items-center gap-6 text-muted-foreground">
@@ -245,19 +303,33 @@ export function SafeSpacePage({ userName }) {
                     <div className="ml-8 sm:ml-12 space-y-3 border-l-2 border-indigo-100 dark:border-indigo-900/50 pl-4">
                       {post.community_replies.map(reply => (
                         <div key={reply.id} className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl rounded-tl-none inline-block max-w-[90%] border border-emerald-100 dark:border-emerald-900/30 group">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-400">{reply.author_name}</p>
-                            <span className="text-[10px] text-emerald-600/60 dark:text-emerald-500/50">{getRelativeTime(reply.created_at)}</span>
+                          
+                          <div className="flex justify-between items-start mb-1 gap-4">
+                            <div className="flex items-baseline gap-2">
+                              <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-400">{reply.author_name}</p>
+                              <span className="text-[10px] text-emerald-600/60 dark:text-emerald-500/50">{getRelativeTime(reply.created_at)}</span>
+                            </div>
+                            
+                            {/* UPDATED: Delete Reply Button (Only shows if user owns the reply) */}
+                            {reply.user_id === user?.id && (
+                              <button 
+                                onClick={() => handleDeleteReply(post.id, reply.id, reply.likes_count || 0)}
+                                className="text-emerald-700/40 hover:text-red-500 transition-colors"
+                                title="Delete Reply"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
+
                           <p className="text-emerald-950 dark:text-emerald-100/90 text-sm mb-2">{reply.content}</p>
                           
-                          {/* NEW: Like Button for Replies */}
                           <div className="flex items-center gap-2">
                             <button 
                               onClick={() => handleReplyLike(post.id, reply.id, reply.user_id, reply.author_name)}
                               className="flex items-center gap-1 text-xs text-emerald-700/60 dark:text-emerald-400/60 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                             >
-                              <Heart className={`w-3.5 h-3.5 ${userLikes.has(reply.id) ? 'fill-emerald-500 text-emerald-500' : ''}`} />
+                              <Heart className={`w-3.5 h-3.5 ${userLikes.has(reply.id) ? 'fill-emerald-500 text-emerald-500' : ''}`} /> 
                               {reply.likes_count || 0}
                             </button>
                           </div>
