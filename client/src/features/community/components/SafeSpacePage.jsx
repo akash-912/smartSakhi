@@ -3,7 +3,11 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
-import { Heart, MessageCircle, ShieldAlert, Send, Sparkles, Award, UserCircle2, Trash2 } from 'lucide-react';
+import { 
+  Heart, MessageCircle, ShieldAlert, Send, 
+  Sparkles, Award, UserCircle2, Trash2, 
+  Bot, Loader2 
+} from 'lucide-react';
 
 const getRelativeTime = (dateString) => {
   if (!dateString) return 'Just now';
@@ -17,12 +21,15 @@ const getRelativeTime = (dateString) => {
 export function SafeSpacePage({ userName }) {
   const { user } = useAuth();
   
+  // UI States
   const [newPost, setNewPost] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [userLikes, setUserLikes] = useState(new Set()); 
+  const [generatingAIFor, setGeneratingAIFor] = useState(null);
 
+  // Data States
   const [posts, setPosts] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +63,8 @@ export function SafeSpacePage({ userName }) {
 
     if (leaderData) setLeaderboard(leaderData);
   };
+
+  // --- ACTIONS ---
 
   const handlePostSubmit = async () => {
     if (!newPost.trim() || !user) return;
@@ -110,6 +119,7 @@ export function SafeSpacePage({ userName }) {
 
     const isCurrentlyLiked = userLikes.has(replyId);
     
+    // Update local memory
     const newLikes = new Set(userLikes);
     if (isCurrentlyLiked) {
       newLikes.delete(replyId);
@@ -118,6 +128,7 @@ export function SafeSpacePage({ userName }) {
     }
     setUserLikes(newLikes);
 
+    // Optimistic UI Update
     setPosts(posts.map(post => {
       if (post.id === postId) {
         return {
@@ -138,6 +149,7 @@ export function SafeSpacePage({ userName }) {
       return post;
     }));
 
+    // Trigger SQL logic
     await supabase.rpc('toggle_reply_like', { 
       r_id: replyId, 
       r_author_id: replyAuthorId, 
@@ -162,11 +174,9 @@ export function SafeSpacePage({ userName }) {
     }
   };
 
-  // UPDATED: Delete Reply Function
   const handleDeleteReply = async (postId, replyId, likesCount) => {
     if (!window.confirm("Are you sure you want to delete this reply?")) return;
 
-    // 1. Delete from DB (The .eq('user_id', user.id) ensures they CANNOT delete someone else's reply)
     const { error } = await supabase
       .from('community_replies')
       .delete()
@@ -174,7 +184,6 @@ export function SafeSpacePage({ userName }) {
       .eq('user_id', user.id);
 
     if (!error) {
-      // 2. Remove from UI
       setPosts(posts.map(post => {
         if (post.id === postId) {
           return {
@@ -185,7 +194,7 @@ export function SafeSpacePage({ userName }) {
         return post;
       }));
 
-      // 3. Deduct the points! (Likes * 10 points)
+      // Deduct points from leaderboard (Likes * 10)
       if (likesCount > 0) {
         const pointsToDeduct = -(likesCount * 10);
         await supabase.rpc('add_compassion_points', { 
@@ -197,6 +206,66 @@ export function SafeSpacePage({ userName }) {
       }
     }
   };
+
+  const handleAISupport = async (postId, postContent) => {
+    if (!user) return;
+    setGeneratingAIFor(postId);
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`, 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant", 
+          messages: [
+            { 
+              role: "system", 
+              content: "You are an empathetic, comforting, and supportive peer in a college student safe-space forum. Keep your response short (2-3 sentences max), warm, and encouraging. Validate their feelings. Do not give medical advice or sound like a robot." 
+            },
+            { 
+              role: "user", 
+              content: `A student posted this: "${postContent}". Please reply to them with support.` 
+            }
+          ]
+        })
+      });
+
+      const aiData = await response.json();
+      const aiMessage = aiData.choices[0].message.content;
+
+      // Save AI reply to Supabase (using the current user's ID to satisfy DB constraints, but masking name)
+      const { data, error } = await supabase
+        .from('community_replies')
+        .insert([{
+          post_id: postId,
+          user_id: user.id, 
+          content: aiMessage,
+          author_name: '🤖 AI Companion'
+        }])
+        .select();
+
+      if (!error && data) {
+        setPosts(posts.map(post => {
+          if (post.id === postId) {
+            return { 
+              ...post, 
+              community_replies: [...post.community_replies, { ...data[0], likes_count: 0 }] 
+            };
+          }
+          return post;
+        }));
+      }
+    } catch (err) {
+      console.error("AI Generation Error:", err);
+      alert("The AI Companion is currently taking a nap. Try again later!");
+    } finally {
+      setGeneratingAIFor(null);
+    }
+  };
+
+  // --- RENDER ---
 
   if (loading) {
     return (
@@ -295,6 +364,23 @@ export function SafeSpacePage({ userName }) {
                       <button onClick={() => setActiveReplyId(activeReplyId === post.id ? null : post.id)} className="flex items-center gap-1.5 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
                         <MessageCircle className="w-5 h-5" /> <span className="text-sm">{post.community_replies?.length || 0} Reply</span>
                       </button>
+
+                      {/* AI Companion Button */}
+                      <button 
+                        onClick={() => handleAISupport(post.id, post.content)} 
+                        disabled={generatingAIFor === post.id}
+                        className="flex items-center gap-1.5 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors disabled:opacity-50"
+                        title="Ask AI for some comforting words"
+                      >
+                        {generatingAIFor === post.id ? (
+                          <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                        ) : (
+                          <Bot className="w-5 h-5" />
+                        )}
+                        <span className="text-sm hidden sm:inline">
+                          {generatingAIFor === post.id ? 'Thinking...' : 'AI Comfort'}
+                        </span>
+                      </button>
                     </div>
                   </Card>
 
@@ -310,8 +396,8 @@ export function SafeSpacePage({ userName }) {
                               <span className="text-[10px] text-emerald-600/60 dark:text-emerald-500/50">{getRelativeTime(reply.created_at)}</span>
                             </div>
                             
-                            {/* UPDATED: Delete Reply Button (Only shows if user owns the reply) */}
-                            {reply.user_id === user?.id && (
+                            {/* Delete Reply Button */}
+                            {(reply.user_id === user?.id || post.user_id === user?.id) && (
                               <button 
                                 onClick={() => handleDeleteReply(post.id, reply.id, reply.likes_count || 0)}
                                 className="text-emerald-700/40 hover:text-red-500 transition-colors"
