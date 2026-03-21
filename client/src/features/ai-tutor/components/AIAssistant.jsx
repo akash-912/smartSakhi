@@ -1,19 +1,6 @@
-import { Card } from '../../../components/ui/Card.jsx';
-import { Button } from '../../../components/ui/Button.jsx';
 import { Textarea } from '../../../components/ui/TextArea.jsx';
-import { Input } from '../../../components/ui/Input.jsx';
-import { Badge } from '../../../components/ui/Badge.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/Tab.jsx';
-import {
-  Brain,
-  FileText,
-  CheckSquare,
-  HelpCircle,
-  Send,
-  Download,
-  Sparkles,
-  BookOpen
-} from 'lucide-react';
+import { Brain, FileText, CheckSquare, HelpCircle, Download, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/Select.jsx';
 import { useState, useEffect } from 'react'; 
 import { useSyllabus } from '../../../features/syllabus/api/useSyllabus.js';
@@ -31,377 +18,234 @@ export function AIAssistant({ userBranch, userSemester }) {
   const [evaluation, setEvaluation] = useState(null);
   const [doubtResponse, setDoubtResponse] = useState('');
   const [evalQuestion, setEvalQuestion] = useState('Explain the difference between Array and Linked List data structures. Discuss their advantages and disadvantages with time complexity analysis.');
+  
   const { syllabus, loading: loadingSyllabus } = useSyllabus(userBranch, userSemester);
-
   const { generateQuestions, isLoading: isGenerating, error: generationError } = useQuestionGenerator();
   const { evaluateAnswer, isLoading: isEvaluating, error: evaluationError } = useAnswerEvaluator();
   const { solveDoubt, isLoading: isSolvingDoubt, error: doubtError } = useDoubtSolver();
 
   useEffect(() => {
-    if (syllabus && syllabus.length > 0) {
-      setSelectedSubject(syllabus[0].name);
-    }
+    if (syllabus && syllabus.length > 0) setSelectedSubject(syllabus[0].name);
   }, [syllabus]);
 
   const handleGenerateQuestions = async () => {
     const questions = await generateQuestions(selectedSubject, questionPaperType, parseInt(numQuestions));
-    if (questions) {
-      setGeneratedQuestions(questions);
-    }
+    if (questions) setGeneratedQuestions(questions);
   };
 
   const handleEvaluateAnswer = async () => {
     const result = await evaluateAnswer(evalQuestion, userAnswer);
-    if (result) {
-      setEvaluation(result);
-    }
+    if (result) setEvaluation(result);
   };
 
   const handleAskDoubt = async () => {
     const answer = await solveDoubt(selectedSubject, doubt);
-    if (answer) {
-      setDoubtResponse(answer);
-    }
+    if (answer) setDoubtResponse(answer);
   };
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-200 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="pb-12">
+      <div className="max-w-6xl mx-auto px-6 py-8">
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-start sm:items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg">
-              <Brain className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">AI Assistant</h1>
-              <p className="text-muted-foreground">Generate questions, evaluate answers, and get help with doubts</p>
-            </div>
+        <div className="mb-8 flex items-start gap-4">
+          <div className="p-3 bg-[#18181b] border border-zinc-800/80 rounded-xl shadow-inner">
+            <Brain className="w-6 h-6 text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-1">AI Tutor</h1>
+            <p className="text-sm text-zinc-400">Generate tests, evaluate answers, and solve doubts instantly.</p>
           </div>
         </div>
 
         <Tabs defaultValue="questions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 bg-muted text-muted-foreground">
-            <TabsTrigger value="questions" className="gap-2 justify-start sm:justify-center data-[state=active]:bg-background data-[state=active]:text-foreground">
-              <FileText className="w-4 h-4" />
-              Question Paper
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-[#18181b] border border-zinc-800/60 p-1 rounded-xl">
+            <TabsTrigger value="questions" className="text-zinc-400 data-[state=active]:bg-[#27272a] data-[state=active]:text-purple-400 rounded-lg py-2 gap-2 text-xs font-semibold">
+              <FileText className="w-4 h-4" /> Generator
             </TabsTrigger>
-            <TabsTrigger value="evaluate" className="gap-2 justify-start sm:justify-center data-[state=active]:bg-background data-[state=active]:text-foreground">
-              <CheckSquare className="w-4 h-4" />
-              Evaluate Answer
+            <TabsTrigger value="evaluate" className="text-zinc-400 data-[state=active]:bg-[#27272a] data-[state=active]:text-purple-400 rounded-lg py-2 gap-2 text-xs font-semibold">
+              <CheckSquare className="w-4 h-4" /> Evaluator
             </TabsTrigger>
-            <TabsTrigger value="doubt" className="gap-2 justify-start sm:justify-center data-[state=active]:bg-background data-[state=active]:text-foreground">
-              <HelpCircle className="w-4 h-4" />
-              Ask Doubt
+            <TabsTrigger value="doubt" className="text-zinc-400 data-[state=active]:bg-[#27272a] data-[state=active]:text-purple-400 rounded-lg py-2 gap-2 text-xs font-semibold">
+              <HelpCircle className="w-4 h-4" /> Doubts
             </TabsTrigger>
           </TabsList>
 
-          {/* Question Paper Generator */}
           <TabsContent value="questions">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  Generate Question Paper
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Select Subject
-                    </label>
-                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                      <SelectTrigger className="bg-background text-foreground border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card text-foreground border-border">
-                        {/* Show a loading state if fetching, otherwise map the real subjects */}
-                        {loadingSyllabus ? (
-                          <SelectItem value="loading" disabled>Loading subjects...</SelectItem>
-                        ) : (
-                          syllabus?.map((subject) => (
-                            <SelectItem key={subject.id} value={subject.name} className="focus:bg-muted focus:text-foreground">
-                              {subject.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+            <div className="grid lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-5">
+                <div className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] p-6 shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-[50px] pointer-events-none"></div>
+                  <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-500" /> Test Settings
+                  </h2>
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Subject</label>
+                      <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                        <SelectTrigger className="bg-[#0a0a0a] text-zinc-200 border-zinc-800 h-11 focus:ring-purple-500/30">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#18181b] border-zinc-800 text-zinc-200">
+                          {loadingSyllabus ? <SelectItem value="loading" disabled>Loading...</SelectItem> : syllabus?.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Format</label>
+                      <Select value={questionPaperType} onValueChange={setQuestionPaperType}>
+                        <SelectTrigger className="bg-[#0a0a0a] text-zinc-200 border-zinc-800 h-11 focus:ring-purple-500/30">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#18181b] border-zinc-800 text-zinc-200">
+                          <SelectItem value="mid-term">Mid-Term Exam</SelectItem>
+                          <SelectItem value="end-term">End-Term Exam</SelectItem>
+                          <SelectItem value="quiz">Quiz</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Count</label>
+                      <input type="number" min="1" max="20" value={numQuestions} onChange={(e) => setNumQuestions(e.target.value)} className="w-full bg-[#0a0a0a] text-zinc-200 border border-zinc-800 rounded-md h-11 px-3 outline-none focus:border-purple-500/50" />
+                    </div>
+                    <button onClick={handleGenerateQuestions} disabled={isGenerating} className="w-full h-11 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] disabled:opacity-50">
+                      {isGenerating ? 'Generating...' : 'Generate Questions'}
+                    </button>
+                    {generationError && <p className="text-xs text-rose-500">{generationError}</p>}
                   </div>
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Exam Type
-                    </label>
-                    <Select value={questionPaperType} onValueChange={setQuestionPaperType}>
-                      <SelectTrigger className="bg-background text-foreground border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card text-foreground border-border">
-                        <SelectItem value="mid-term" className="focus:bg-muted focus:text-foreground">Mid-Term Exam</SelectItem>
-                        <SelectItem value="end-term" className="focus:bg-muted focus:text-foreground">End-Term Exam</SelectItem>
-                        <SelectItem value="quiz" className="focus:bg-muted focus:text-foreground">Quiz</SelectItem>
-                        <SelectItem value="practice" className="focus:bg-muted focus:text-foreground">Practice Test</SelectItem>
-                      </SelectContent>
-                    </Select>
+              <div className="lg:col-span-7">
+                <div className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] p-6 shadow-lg h-full">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-bold text-white">Generated Paper</h3>
+                    {generatedQuestions.length > 0 && (
+                      <button className="flex items-center gap-2 text-xs font-semibold bg-[#27272a] hover:bg-[#3f3f46] text-white px-3 py-1.5 rounded-lg transition-colors">
+                        <Download className="w-3 h-3" /> Download
+                      </button>
+                    )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Number of Questions
-                    </label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={numQuestions}
-                      onChange={(e) => setNumQuestions(e.target.value)}
-                      className="bg-background text-foreground border-border"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleGenerateQuestions}
-                    className="w-full gap-2"
-                    disabled={isGenerating}
-                  >
-                    <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-pulse' : ''}`} />
-                    {isGenerating ? 'Generating...' : 'Generate Questions'}
-                  </Button>
-                  {generationError && (
-                    <p className="text-sm text-red-500 mt-2">{generationError}</p>
+                  {generatedQuestions.length > 0 ? (
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                      {generatedQuestions.map((q, index) => (
+                        <div key={index} className="p-4 bg-[#121212] rounded-xl border border-zinc-800/80">
+                          <p className="text-zinc-100 font-medium mb-3 text-sm">{index + 1}. {q.questionText}</p>
+                          <div className="pl-3 border-l-2 border-purple-500/50 bg-purple-500/5 py-2 rounded-r-md">
+                            <p className="text-xs text-zinc-400 leading-relaxed"><span className="font-bold text-purple-400">Ans:</span> {q.correctAnswer}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-64 border border-dashed border-zinc-800 rounded-xl text-zinc-500">
+                      <FileText className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm">Configure settings to generate a paper</p>
+                    </div>
                   )}
                 </div>
-              </Card>
+              </div>
+            </div>
+          </TabsContent>
 
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-foreground">Generated Questions</h3>
-                  {generatedQuestions.length > 0 && (
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-muted text-foreground border-border">
-                      <Download className="w-4 h-4" />
-                      Download PDF
-                    </Button>
-                  )}
+          <TabsContent value="evaluate">
+            <div className="grid lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-6">
+                <div className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] p-6 shadow-lg">
+                  <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <CheckSquare className="w-5 h-5 text-purple-500" /> Submit Answer
+                  </h2>
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Question</label>
+                      <Textarea rows={3} value={evalQuestion} onChange={(e) => setEvalQuestion(e.target.value)} className="resize-none bg-[#0a0a0a] text-zinc-200 border-zinc-800 focus:ring-purple-500/30" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Your Answer</label>
+                      <Textarea rows={8} value={userAnswer} onChange={(e) => setUserAnswer(e.target.value)} className="resize-none bg-[#0a0a0a] text-zinc-200 border-zinc-800 focus:ring-purple-500/30" />
+                    </div>
+                    <button onClick={handleEvaluateAnswer} disabled={isEvaluating} className="w-full h-11 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-400 rounded-xl font-semibold transition-colors disabled:opacity-50">
+                      {isEvaluating ? 'Evaluating...' : 'Evaluate Answer'}
+                    </button>
+                    {evaluationError && <p className="text-xs text-rose-500">{evaluationError}</p>}
+                  </div>
                 </div>
-                {generatedQuestions.length > 0 ? (
-                  <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
-                    {generatedQuestions.map((q, index) => (
-                      <div key={index} className="p-4 bg-muted/50 rounded-lg border border-border">
-                        <p className="text-foreground font-semibold mb-2">{index + 1}. {q.questionText}</p>
-                        <div className="pl-4 border-l-2 border-primary/50">
-                          <p className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Answer/Explanation:</span> {q.correctAnswer}</p>
+              </div>
+
+              <div className="lg:col-span-6">
+                <div className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] p-6 shadow-lg h-full">
+                  <h3 className="font-bold text-white mb-6">AI Evaluation Report</h3>
+                  {evaluation ? (
+                    <div className="space-y-6">
+                      <div className="text-center p-6 bg-[#0a0a0a] rounded-xl border border-zinc-800">
+                        <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Score</p>
+                        <p className="text-5xl font-bold text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">{evaluation.score}<span className="text-xl text-zinc-600">/100</span></p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-[#121212] p-4 rounded-xl border border-emerald-500/20">
+                          <h4 className="text-xs font-bold text-emerald-500 mb-3 uppercase tracking-wider">Strengths</h4>
+                          <ul className="space-y-2 text-xs text-zinc-300">
+                            {evaluation.strengths.map((s, i) => <li key={i} className="flex gap-2"><span className="text-emerald-500">✓</span> {s}</li>)}
+                          </ul>
+                        </div>
+                        <div className="bg-[#121212] p-4 rounded-xl border border-rose-500/20">
+                          <h4 className="text-xs font-bold text-rose-500 mb-3 uppercase tracking-wider">Missing</h4>
+                          <ul className="space-y-2 text-xs text-zinc-300">
+                            {evaluation.improvements.map((s, i) => <li key={i} className="flex gap-2"><span className="text-rose-500">→</span> {s}</li>)}
+                          </ul>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                    <FileText className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="text-foreground font-medium">No questions generated yet</p>
-                    <p className="text-sm mt-1">Configure settings and click generate</p>
-                  </div>
-                )}
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Answer Evaluation */}
-          <TabsContent value="evaluate">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <CheckSquare className="w-5 h-5 text-primary" />
-                  Submit Your Answer
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Question
-                    </label>
-                    <Textarea
-                      rows={4}
-                      value={evalQuestion}
-                      onChange={(e) => setEvalQuestion(e.target.value)}
-                      placeholder="Type or paste the question here..."
-                      className="resize-none bg-background text-foreground border-border"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Your Answer
-                    </label>
-                    <Textarea
-                      placeholder="Type your answer here..."
-                      rows={10}
-                      value={userAnswer}
-                      onChange={(e) => setUserAnswer(e.target.value)}
-                      className="resize-none bg-background text-foreground border-border"
-                    />
-                  </div>
-
-                  <Button onClick={handleEvaluateAnswer} className="w-full gap-2" disabled={isEvaluating}>
-                    <CheckSquare className={`w-4 h-4 ${isEvaluating ? 'animate-pulse' : ''}`} />
-                    {isEvaluating ? 'Evaluating...' : 'Evaluate Answer'}
-                  </Button>
-                  {evaluationError && (
-                    <p className="text-sm text-red-500 mt-2">{evaluationError}</p>
-                  )}
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="font-bold text-foreground mb-4">AI Evaluation</h3>
-                {evaluation ? (
-                  <div className="space-y-6">
-                    <div className="text-center p-6 bg-green-500/10 rounded-lg border border-green-500/20">
-                      <p className="text-sm text-muted-foreground mb-2">Your Score</p>
-                      <p className="text-5xl font-bold text-green-600 dark:text-green-400">{evaluation.score}/100</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <span className="text-green-600 dark:text-green-400">✓</span> Strengths
-                      </h4>
-                      <ul className="space-y-2">
-                        {evaluation.strengths.map((strength, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <Badge className="bg-green-500/20 text-green-700 dark:text-green-400 mt-0.5 border-none">+</Badge>
-                            {strength}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <span className="text-orange-600 dark:text-orange-400">!</span> Areas for Improvement
-                      </h4>
-                      <ul className="space-y-2">
-                        {evaluation.improvements.map((improvement, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <Badge className="bg-orange-500/20 text-orange-700 dark:text-orange-400 mt-0.5 border-none">→</Badge>
-                            {improvement}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                      <h4 className="font-semibold text-foreground mb-2">Detailed Feedback</h4>
-                      <p className="text-sm text-muted-foreground">{evaluation.feedback}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                    <CheckSquare className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="text-foreground font-medium">No evaluation yet</p>
-                    <p className="text-sm mt-1">Submit your answer to get AI feedback</p>
-                  </div>
-                )}
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Doubt Solver */}
-          <TabsContent value="doubt">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-orange-600 dark:text-orange-500" />
-                  Ask Your Doubt
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Select Subject
-                    </label>
-                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                      <SelectTrigger className="bg-background text-foreground border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card text-foreground border-border">
-                        {/* Show a loading state if fetching, otherwise map the real subjects */}
-                        {loadingSyllabus ? (
-                          <SelectItem value="loading" disabled>Loading subjects...</SelectItem>
-                        ) : (
-                          syllabus?.map((subject) => (
-                            <SelectItem key={subject.id} value={subject.name} className="focus:bg-muted focus:text-foreground">
-                              {subject.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Your Question
-                    </label>
-                    <Textarea
-                      placeholder="What would you like to know? Be as specific as possible..."
-                      rows={8}
-                      value={doubt}
-                      onChange={(e) => setDoubt(e.target.value)}
-                      className="resize-none bg-background text-foreground border-border"
-                    />
-                  </div>
-
-                  <Button onClick={handleAskDoubt} className="w-full gap-2" disabled={isSolvingDoubt}>
-                    <Send className={`w-4 h-4 ${isSolvingDoubt ? 'animate-pulse' : ''}`} />
-                    {isSolvingDoubt ? 'Getting Answer...' : 'Get Answer'}
-                  </Button>
-                  {doubtError && (
-                    <p className="text-sm text-red-500 mt-2">{doubtError}</p>
-                  )}
-
-                  <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <div className="flex items-start gap-2">
-                      <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-foreground mb-1">
-                          Pro Tip
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          For better results, include context about what you've already tried
-                          and specific concepts you're struggling with.
-                        </p>
+                      <div className="p-4 bg-purple-500/5 rounded-xl border border-purple-500/20">
+                        <h4 className="text-xs font-bold text-purple-400 mb-2 uppercase tracking-wider">Summary Feedback</h4>
+                        <p className="text-xs text-zinc-300 leading-relaxed">{evaluation.feedback}</p>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-64 border border-dashed border-zinc-800 rounded-xl text-zinc-500">
+                      <CheckSquare className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm">Submit an answer to see results</p>
+                    </div>
+                  )}
                 </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="font-bold text-foreground mb-4">AI Response</h3>
-                {doubtResponse ? (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                      <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
-                        {doubtResponse}
-                      </pre>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 hover:bg-muted text-foreground border-border">
-                        Follow-up Question
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1 hover:bg-muted text-foreground border-border">
-                        View Related Topics
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                    <HelpCircle className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="text-foreground font-medium">No response yet</p>
-                    <p className="text-sm mt-1">Ask a question to get AI assistance</p>
-                  </div>
-                )}
-              </Card>
+              </div>
             </div>
           </TabsContent>
+
+          <TabsContent value="doubt">
+            <div className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] p-6 shadow-lg max-w-4xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-purple-500" /> Ask a Question
+                  </h2>
+                  <div className="space-y-5 mb-6">
+                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                      <SelectTrigger className="bg-[#0a0a0a] text-zinc-200 border-zinc-800 h-11"><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                      <SelectContent className="bg-[#18181b] border-zinc-800 text-zinc-200">
+                        {syllabus?.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Textarea rows={6} placeholder="Describe what you are stuck on..." value={doubt} onChange={(e) => setDoubt(e.target.value)} className="bg-[#0a0a0a] text-zinc-200 border-zinc-800 focus:ring-purple-500/30 resize-none" />
+                    <button onClick={handleAskDoubt} disabled={isSolvingDoubt} className="w-full h-11 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-all">
+                      {isSolvingDoubt ? 'Thinking...' : 'Get Explanation'}
+                    </button>
+                    {doubtError && <p className="text-xs text-rose-500">{doubtError}</p>}
+                  </div>
+                </div>
+                <div className="bg-[#121212] border border-zinc-800/80 rounded-xl p-5 relative overflow-hidden flex flex-col">
+                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                   <h3 className="font-bold text-white mb-4">AI Response</h3>
+                   <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                     {doubtResponse ? (
+                       <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{doubtResponse}</div>
+                     ) : (
+                       <div className="h-full flex items-center justify-center text-zinc-500 text-sm">Awaiting your question...</div>
+                     )}
+                   </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
         </Tabs>
       </div>
     </div>

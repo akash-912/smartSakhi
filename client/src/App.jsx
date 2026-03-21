@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 // Page Imports
 import { LoginPage } from './features/auth/components/LoginForm.jsx';
-import { Navbar } from './components/Navbar.jsx';
 import { Dashboard } from './pages/Dashboard.jsx';
 import { ProfilePage } from './pages/ProfilePage.jsx';
 import { SyllabusPage } from './pages/SyllabusPage.jsx';
@@ -16,53 +15,36 @@ import { AdminUploadPage } from './pages/AdminUploadPage.jsx';
 import { UpdatePasswordPage } from './features/auth/components/UpdatePasswordPage.jsx';
 import { PlannerSidebar } from './features/daily-planner/components/PlannerSidebar.jsx';
 import { SafeSpacePage } from './features/community/components/SafeSpacePage.jsx';
+import { MainLayout } from './components/layout/MainLayout.jsx';
 
 function AppContent() {
-  const { user, logOut } = useAuth();
+  const { user, logOut, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. Initialize State from LocalStorage (Persist the lock across refreshes!)
-  const [isRecoveryMode, setIsRecoveryMode] = useState(() => {
-    return localStorage.getItem('recovery_pending') === 'true';
-  });
-
+  // Initialize State
+  const [isRecoveryMode, setIsRecoveryMode] = useState(() => localStorage.getItem('recovery_pending') === 'true');
   const [userBranch, setUserBranch] = useState('Computer Science Engineering');
   const [userSemester, setUserSemester] = useState(3);
-  //daily-task-tracker
   const [isPlannerOpen, setIsPlannerOpen] = useState(false);
-  const togglePlanner = () => {
-    setIsPlannerOpen(prev => !prev);
-  };
+  
+  const togglePlanner = () => setIsPlannerOpen(prev => !prev);
 
-  // --- RECOVERY MODE LISTENER ---
+  // Recovery Mode Listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      
-      // A. LOCKDOWN: User clicked email link
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
-        localStorage.setItem('recovery_pending', 'true'); // Save the lock to disk
+        localStorage.setItem('recovery_pending', 'true');
         navigate('/update-password'); 
-      }
-      
-      // B. SAFETY CHECK: If user signs in normally, ensure lock is cleared
-      // This handles the edge case where a user abandoned recovery previously
-      else if (event === 'SIGNED_IN' && !session?.user?.user_metadata?.recovery_mode) {
-         // We simply rely on the fact that if they logged in with a password, 
-         // they aren't in the recovery flow.
-      }
-      
-      // C. SIGN OUT: Reset state (Local storage is handled by the Update Page or manual logout)
-      else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT') {
         setIsRecoveryMode(false);
       }
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // --- USER DATA SYNC ---
+  // Sync User Data
   useEffect(() => {
     if (user?.user_metadata) {
       if (user.user_metadata.branch) setUserBranch(user.user_metadata.branch);
@@ -70,151 +52,130 @@ function AppContent() {
     }
   }, [user]);
 
-  
-
-  
-
   const userName = user?.user_metadata?.full_name || 'Student';
   const userEmail = user?.email || '';
-  const currentPath = location.pathname.replace('/', '') || 'dashboard';
+  
+  // Get the current page from the URL (e.g., "/dashboard" becomes "dashboard")
+  const currentPage = location.pathname.replace('/', '') || 'dashboard';
 
   const handleNavigate = (page) => {
-    // Block navigation if locked
     if (isRecoveryMode) return; 
     navigate(`/${page}`);
     setIsPlannerOpen(false);
   };
 
   const handleLogout = async () => {
-    // If they logout manually during recovery, clear the lock
     localStorage.removeItem('recovery_pending');
     await logOut();
     navigate('/'); 
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      
-      {/* HIDE NAVBAR: If in recovery mode, NO navigation allowed */}
-      {user && location.pathname !== '/' && !isRecoveryMode && (
-        <Navbar
-          currentPage={currentPath}
-          onNavigate={handleNavigate}
-          isLoggedIn={!!user}
-          onLogout={handleLogout}
-          userName={userName}
-          openPlanner={togglePlanner}
-        />
-      )}
+  // 1. SHOW SPINNER WHILE SUPABASE CHECKS SESSION
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center z-50">
+        <div className="w-10 h-10 border-4 border-teal-500/30 border-t-teal-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
-      <PlannerSidebar isOpen={isPlannerOpen} />
-
+  // 2. IF TRULY NOT LOGGED IN, LOCK THEM TO THE LOGIN PAGE
+  if (!user) {
+    return (
       <Routes>
-        {/* PUBLIC ROUTE */}
-        <Route 
-          path="/" 
-          element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
-        />
-        
-        {/* RECOVERY ROUTE - The only allowed place when in recovery mode */}
-        <Route 
-          path="/update-password" 
-          element={<UpdatePasswordPage />} 
-        />
-        
-        {/* ADMIN ROUTE */}
-        <Route path="/admin/upload" element={<AdminUploadPage />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
 
-        {/* --- PROTECTED ROUTES (LOCKED DOWN) --- */}
-        {/* If isRecoveryMode is true, redirect ALL these to /update-password */}
-        
-        <Route 
-          path="/dashboard" 
-          element={
-            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
-              <ProtectedRoute>
-                <Dashboard
-                  userName={userName}
-                  userBranch={userBranch}
-                  userSemester={userSemester}
-                  onNavigate={handleNavigate}
-                />
-              </ProtectedRoute>
-            )
-          } 
-        />
+  // 3. IF LOGGED IN, BUT SITTING ON "/", REDIRECT TO DASHBOARD
+  if (user && location.pathname === '/') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
 
-        <Route 
-          path="/profile" 
-          element={
-            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
-              <ProtectedRoute>
-                <ProfilePage
-                  userName={userName}
-                  userEmail={userEmail}
-                  userBranch={userBranch}
-                  userSemester={userSemester}
-                  onBranchChange={setUserBranch}
-                  onSemesterChange={setUserSemester}
-                />
-              </ProtectedRoute>
-            )
-          } 
-        />
-       
-        <Route 
-          path="/syllabus" 
-          element={
-            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
-              <ProtectedRoute>
-                <SyllabusPage
-                  userBranch={userBranch}
-                  userSemester={userSemester}
-                  onSubjectSelect={(subject) => console.log('Selected subject:', subject)}
-                />
-              </ProtectedRoute>
-            )
-          } 
-        />
+  // If user IS logged in, wrap the app in the MainLayout (Sidebars + Dark Mode)
+  return (
+    <>
+      <MainLayout
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        isLoggedIn={!!user}
+        onLogout={handleLogout}
+        userName={userName}
+        openPlanner={togglePlanner}
+        isRecoveryMode={isRecoveryMode} // Pass this so layout hides sidebar during recovery
+      >
+        <Routes>
+          <Route path="/admin/upload" element={<AdminUploadPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
 
-        <Route 
-          path="/planner" 
-          element={
+          {/* PROTECTED ROUTES */}
+          <Route path="/dashboard" element={
             isRecoveryMode ? <Navigate to="/update-password" replace /> : (
               <ProtectedRoute>
-                <PlannerPage userBranch={userBranch} userSemester={userSemester} />
-              </ProtectedRoute>
-            )
-          }  
-        />
-
-        <Route 
-          path="/ai-assistant" 
-          element={
-            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
-              <ProtectedRoute>
-                <AIAssistant 
+                <Dashboard 
+                  userName={userName} 
                   userBranch={userBranch} 
                   userSemester={userSemester} 
+                  onNavigate={handleNavigate} 
+                  openPlanner={togglePlanner} /* <--- ADD THIS LINE */
                 />
               </ProtectedRoute>
             )
-          } 
-        />
-        <Route 
-          path="/safe-space" 
-          element={
+          } />
+
+          <Route path="/profile" element={
+            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
+              <ProtectedRoute>
+                <ProfilePage userName={userName} userEmail={userEmail} userBranch={userBranch} userSemester={userSemester} onBranchChange={setUserBranch} onSemesterChange={setUserSemester} onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            )
+          } />
+         
+          <Route path="/syllabus" element={
+            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
+              <ProtectedRoute>
+                <SyllabusPage userBranch={userBranch} userSemester={userSemester} onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            )
+          } />
+
+          <Route path="/planner" element={
+            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
+              <ProtectedRoute>
+                <PlannerPage userBranch={userBranch} userSemester={userSemester} onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            )
+          } />
+
+          <Route path="/ai-assistant" element={
+            isRecoveryMode ? <Navigate to="/update-password" replace /> : (
+              <ProtectedRoute>
+                <AIAssistant userBranch={userBranch} userSemester={userSemester} onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            )
+          } />
+
+          <Route path="/safe-space" element={
             isRecoveryMode ? <Navigate to="/update-password" replace /> : (
               <ProtectedRoute>
                 <SafeSpacePage userName={userName} />
               </ProtectedRoute>
             )
-          } 
-        />
-        
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </div>
+          } />
+          
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </MainLayout>
+
+      {/* The slide-out planner panel */}
+      <PlannerSidebar 
+        isOpen={isPlannerOpen} 
+        onClose={() => setIsPlannerOpen(false)} 
+      />
+    </>
   );
 }
 

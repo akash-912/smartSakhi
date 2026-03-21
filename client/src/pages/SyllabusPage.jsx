@@ -3,50 +3,23 @@ import { supabase } from '../lib/supabase';
 import { useSyllabus } from '../features/syllabus/api/useSyllabus'; 
 import { useProgress } from '../features/syllabus/api/useProgress';
 import { useBranches } from '../features/syllabus/hooks/useBranches'; 
-
-import { Card } from '../components/ui/Card.jsx';
-import { Button } from '../components/ui/Button.jsx';
-import { Badge } from '../components/ui/Badge.jsx';
-import { 
-  BookOpen, 
-  CheckCircle, 
-  Circle, 
-  Youtube,
-  Layers,
-  FileText,
-  Download,
-  BookMarked,
-  Video
-} from 'lucide-react';
+import { BookOpen, CheckCircle, Circle, Youtube, Layers, FileText, Download, BookMarked } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordian.jsx';
-import { Progress } from '../components/ui/Progress.jsx';
 
 export function SyllabusPage({ userBranch, userSemester }) {
-  // 1. Get dynamic branches
   const { branches, loading: loadingBranches } = useBranches();
-  
   const [selectedBranch, setSelectedBranch] = useState(userBranch || 'Computer Science Engineering');
   const [selectedSemester, setSelectedSemester] = useState(userSemester || 3);
   const [materials, setMaterials] = useState([]);
 
-  // 2. Fetch Syllabus & Progress
   const { syllabus, loading: loadingSyllabus, error } = useSyllabus(selectedBranch, selectedSemester);
   const { completedTopics, toggleTopic } = useProgress();
 
-  // 3. Fetch Study Materials (Notes/PYQs)
   useEffect(() => {
     const fetchMaterials = async () => {
-      const { data, error } = await supabase
-        .from('study_materials')
-        .select('*')
-        .eq('branch', selectedBranch)
-        .eq('semester', selectedSemester);
-
-      if (!error && data) {
-        setMaterials(data);
-      }
+      const { data, error } = await supabase.from('study_materials').select('*').eq('branch', selectedBranch).eq('semester', selectedSemester);
+      if (!error && data) setMaterials(data);
     };
-    
     fetchMaterials();
   }, [selectedBranch, selectedSemester]);
 
@@ -68,162 +41,142 @@ export function SyllabusPage({ userBranch, userSemester }) {
     return Math.round((completedCount / totalTopicsCount) * 100);
   };
 
-  // Loading State
   if (loadingSyllabus || loadingBranches) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-200">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex justify-center pt-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
       </div>
     );
   }
 
-  if (error) {
-    return <div className="text-center p-8 text-destructive bg-background min-h-screen">Failed to load syllabus: {error}</div>;
-  }
-
   return (
-    <div className="min-h-screen bg-background transition-colors duration-200 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="pb-12">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Syllabus Browser</h1>
-          <p className="text-muted-foreground">
-            Explore subjects, units, and resources for {selectedBranch} - Semester {selectedSemester}
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-1">Syllabus Browser</h1>
+          <p className="text-sm text-zinc-400">Explore subjects, units, and resources for {selectedBranch} - Sem {selectedSemester}</p>
         </div>
 
-        {/* Branch and Semester Selector */}
-        <Card className="p-6 mb-8">
-          <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] p-6 mb-10 shadow-lg">
+          <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Select Branch</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Select Branch</label>
+              <div className="flex flex-wrap gap-2">
                 {branches.map((branch) => (
-                  <Button
+                  <button
                     key={branch.id}
-                    variant={selectedBranch === branch.name ? 'default' : 'outline'}
                     onClick={() => setSelectedBranch(branch.name)}
-                    className={`text-sm transition-colors ${
-                      selectedBranch === branch.name ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'
+                    className={`text-xs px-4 py-2 rounded-xl transition-all font-medium border ${
+                      selectedBranch === branch.name 
+                        ? 'bg-teal-500/10 text-teal-400 border-teal-500/30 shadow-[0_0_10px_rgba(20,184,166,0.1)]' 
+                        : 'bg-[#0a0a0a] text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-zinc-200'
                     }`}
                   >
                     {branch.short_code || branch.name.split(' ').slice(0, 2).join(' ')}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Select Semester</label>
-              <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-4 gap-2">
+              <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Select Semester</label>
+              <div className="flex flex-wrap gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                  <Button
+                  <button
                     key={sem}
-                    variant={selectedSemester === sem ? 'default' : 'outline'}
                     onClick={() => setSelectedSemester(sem)}
-                    className={`transition-colors ${
-                      selectedSemester === sem ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'
+                    className={`text-xs px-4 py-2 rounded-xl transition-all font-medium border ${
+                      selectedSemester === sem 
+                        ? 'bg-teal-500/10 text-teal-400 border-teal-500/30 shadow-[0_0_10px_rgba(20,184,166,0.1)]' 
+                        : 'bg-[#0a0a0a] text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-zinc-200'
                     }`}
                   >
-                    {sem}
-                  </Button>
+                    Sem {sem}
+                  </button>
                 ))}
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* Dynamic Subjects Grid */}
         <div className="space-y-6">
           {syllabus.length === 0 ? (
-            <Card className="p-12 text-center text-muted-foreground bg-muted/20 border-border">
+            <div className="p-12 text-center text-zinc-500 border border-dashed border-zinc-800 rounded-[2rem]">
               No syllabus uploaded for Semester {selectedSemester} yet.
-            </Card>
+            </div>
           ) : (
             syllabus.map((subject) => {
               const currentProgress = calculateSubjectProgress(subject);
-              
-              // Filter materials for this specific subject
               const subjectMaterials = materials.filter(m => m.subject_name === subject.name);
               const pyqs = subjectMaterials.filter(m => m.type === 'PYQ');
               const notes = subjectMaterials.filter(m => m.type === 'Note');
 
               return (
-                <Card key={subject.id} className="overflow-hidden border-border">
-                  <div className="p-6 bg-muted/30 border-b border-border">
+                <div key={subject.id} className="bg-[#18181b] border border-zinc-800/60 rounded-[1.5rem] overflow-hidden shadow-lg">
+                  <div className="p-6 bg-[#1f1f22] border-b border-zinc-800/80">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-primary rounded-lg">
-                            <BookOpen className="w-5 h-5 text-primary-foreground" />
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-[#0a0a0a] border border-zinc-800 rounded-xl shadow-inner mt-1">
+                            <BookOpen className="w-5 h-5 text-teal-500" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-foreground">{subject.name}</h3>
+                            <h3 className="text-xl font-bold text-zinc-100">{subject.name}</h3>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              <Badge variant="secondary" className="bg-background text-muted-foreground border-border">
+                              <span className="text-xs bg-[#0a0a0a] text-zinc-400 px-2 py-1 rounded border border-zinc-800">
                                 {subject.code || `SUB-${subject.id.slice(0,4)}`}
-                              </Badge>
-                              <Badge variant="secondary" className="bg-background text-muted-foreground border-border">
+                              </span>
+                              <span className="text-xs bg-[#0a0a0a] text-zinc-400 px-2 py-1 rounded border border-zinc-800">
                                 {subject.credits} Credits
-                              </Badge>
+                              </span>
                             </div>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-6">
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-primary">{currentProgress}%</p>
-                          <p className="text-xs text-muted-foreground">Progress</p>
+                          <p className="text-2xl font-bold text-teal-500 drop-shadow-[0_0_8px_rgba(20,184,166,0.3)]">{currentProgress}%</p>
+                          <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Progress</p>
                         </div>
-                        {/* Subject-level Playlist Button (optional) */}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="gap-2 hover:bg-muted text-foreground border-border"
+                        <button 
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 text-sm font-medium transition-colors"
                           onClick={() => window.open(subject.youtube_url || 'https://youtube.com', '_blank')}
                         >
-                          <Youtube className="w-4 h-4 text-destructive" />
-                          Playlist
-                        </Button>
+                          <Youtube className="w-4 h-4" /> Playlist
+                        </button>
                       </div>
                     </div>
-                    <Progress value={currentProgress} className="mt-4" />
+                    <div className="mt-5 w-full bg-[#0a0a0a] rounded-full h-1.5 overflow-hidden border border-zinc-800">
+                       <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${currentProgress}%` }} />
+                    </div>
                   </div>
 
                   <div className="p-6">
-                    <Accordion type="single" collapsible className="w-full space-y-2">
-                      
-                      {/* Study Materials Section */}
+                    <Accordion type="single" collapsible className="w-full space-y-3">
                       {subjectMaterials.length > 0 && (
-                        <AccordionItem value="materials" className="border-border bg-primary/5 rounded-lg px-2">
-                          <AccordionTrigger className="hover:no-underline">
-                            <div className="flex items-center justify-between w-full pr-4">
+                        <AccordionItem value="materials" className="border border-indigo-500/20 bg-indigo-500/5 rounded-xl overflow-hidden">
+                          <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-indigo-500/10 transition-colors">
+                            <div className="flex items-center justify-between w-full pr-2">
                               <div className="flex items-center gap-3">
-                                <BookMarked className="w-5 h-5 text-primary" />
-                                <span className="font-semibold text-left text-foreground">
-                                  Study Materials (PYQs & Notes)
-                                </span>
+                                <BookMarked className="w-4 h-4 text-indigo-400" />
+                                <span className="font-semibold text-sm text-zinc-200">Study Materials (PYQs & Notes)</span>
                               </div>
-                              <Badge variant="outline" className="text-primary border-primary/30 bg-background">
-                                {subjectMaterials.length} Files
-                              </Badge>
+                              <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{subjectMaterials.length} Files</span>
                             </div>
                           </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-4 pt-2 pb-2">
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="space-y-4 pt-2">
                               {pyqs.length > 0 && (
                                 <div>
-                                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Previous Year Questions</h4>
-                                  <div className="grid sm:grid-cols-2 gap-2">
+                                  <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Previous Year Questions</h4>
+                                  <div className="grid sm:grid-cols-2 gap-3">
                                     {pyqs.map(pyq => (
-                                      <div key={pyq.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-lg hover:border-primary/50 transition-colors">
+                                      <div key={pyq.id} className="flex items-center justify-between p-3 bg-[#121212] border border-zinc-800 rounded-lg hover:border-orange-500/50 transition-colors">
                                         <div className="flex items-center gap-2 overflow-hidden">
                                           <FileText className="w-4 h-4 text-orange-500 shrink-0" />
-                                          <span className="text-sm font-medium text-foreground truncate">{pyq.title}</span>
+                                          <span className="text-xs font-medium text-zinc-300 truncate">{pyq.title}</span>
                                         </div>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => window.open(pyq.file_url, '_blank')}>
-                                          <Download className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                                        </Button>
+                                        <button className="text-zinc-500 hover:text-orange-400" onClick={() => window.open(pyq.file_url, '_blank')}><Download className="w-4 h-4" /></button>
                                       </div>
                                     ))}
                                   </div>
@@ -231,17 +184,15 @@ export function SyllabusPage({ userBranch, userSemester }) {
                               )}
                               {notes.length > 0 && (
                                 <div>
-                                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1 mt-4">PDF Notes</h4>
-                                  <div className="grid sm:grid-cols-2 gap-2">
+                                  <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">PDF Notes</h4>
+                                  <div className="grid sm:grid-cols-2 gap-3">
                                     {notes.map(note => (
-                                      <div key={note.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-lg hover:border-primary/50 transition-colors">
+                                      <div key={note.id} className="flex items-center justify-between p-3 bg-[#121212] border border-zinc-800 rounded-lg hover:border-blue-500/50 transition-colors">
                                         <div className="flex items-center gap-2 overflow-hidden">
                                           <FileText className="w-4 h-4 text-blue-500 shrink-0" />
-                                          <span className="text-sm font-medium text-foreground truncate">{note.title}</span>
+                                          <span className="text-xs font-medium text-zinc-300 truncate">{note.title}</span>
                                         </div>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => window.open(note.file_url, '_blank')}>
-                                          <Download className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                                        </Button>
+                                        <button className="text-zinc-500 hover:text-blue-400" onClick={() => window.open(note.file_url, '_blank')}><Download className="w-4 h-4" /></button>
                                       </div>
                                     ))}
                                   </div>
@@ -252,71 +203,34 @@ export function SyllabusPage({ userBranch, userSemester }) {
                         </AccordionItem>
                       )}
 
-                      {/* Regular Units List */}
                       {subject.units.map((unit) => {
                         const completedTopicsInUnit = unit.topics.filter(t => completedTopics.has(t.id)).length;
                         const totalTopicsInUnit = unit.topics.length;
-
                         return (
-                          <AccordionItem key={unit.id} value={`unit-${unit.id}`} className="border-border px-2">
-                            <AccordionTrigger className="hover:no-underline">
-                              <div className="flex items-center justify-between w-full pr-4">
+                          <AccordionItem key={unit.id} value={`unit-${unit.id}`} className="border border-zinc-800/80 bg-[#121212] rounded-xl overflow-hidden">
+                            <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-[#18181b] transition-colors">
+                              <div className="flex items-center justify-between w-full pr-2">
                                 <div className="flex items-center gap-3">
-                                  <Layers className="w-5 h-5 text-primary" />
-                                  <span className="font-semibold text-left text-foreground">
-                                    Unit {unit.unit_number}: {unit.title}
-                                  </span>
+                                  <Layers className="w-4 h-4 text-zinc-500" />
+                                  <span className="font-semibold text-sm text-zinc-200">Unit {unit.unit_number}: {unit.title}</span>
                                 </div>
-                                <Badge variant="outline" className="text-muted-foreground border-border">
-                                  {completedTopicsInUnit}/{totalTopicsInUnit} topics
-                                </Badge>
+                                <span className="text-[10px] text-zinc-500 bg-[#0a0a0a] px-2 py-0.5 rounded border border-zinc-800">{completedTopicsInUnit}/{totalTopicsInUnit} topics</span>
                               </div>
                             </AccordionTrigger>
-                            <AccordionContent>
+                            <AccordionContent className="px-4 pb-4">
                               <div className="space-y-2 pt-2">
                                 {unit.topics.map((topic) => {
                                   const isTopicCompleted = completedTopics.has(topic.id);
-                                  
                                   return (
-                                    <div
-                                      key={topic.id}
-                                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border group"
-                                      onClick={() => handleTopicToggle(topic.id)}
-                                    >
-                                      <div className="flex items-center gap-3 flex-1 overflow-hidden min-w-0">
-                                        {/* Status Icon */}
-                                        {isTopicCompleted ? (
-                                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-500 shrink-0" />
-                                        ) : (
-                                          <Circle className="w-5 h-5 text-muted-foreground/50 shrink-0" />
-                                        )}
-                                        
-                                        {/* Topic Title */}
-                                        <span className={`truncate ${isTopicCompleted ? 'text-muted-foreground line-through' : 'text-foreground font-medium'} ml-2 sm:ml-4 mr-2 sm:mr-4`}>
-                                          {topic.title}
-                                        </span>
-
-                                        {/* YouTube Link (Conditional) */}
+                                    <div key={topic.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-[#0a0a0a] border border-zinc-800/50 rounded-lg hover:border-zinc-700 transition-colors cursor-pointer group" onClick={() => handleTopicToggle(topic.id)}>
+                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        {isTopicCompleted ? <CheckCircle className="w-4 h-4 text-teal-500 shrink-0" /> : <Circle className="w-4 h-4 text-zinc-600 shrink-0" />}
+                                        <span className={`truncate text-sm ${isTopicCompleted ? 'text-zinc-500 line-through' : 'text-zinc-300'} ml-1`}>{topic.title}</span>
                                         {topic.youtube_url && (
-                                          <a 
-                                            href={topic.youtube_url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()} // Prevents toggling 'completed'
-                                            className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors ml-1"
-                                            title="Watch Video Tutorial"
-                                          >
-                                            <Youtube className="w-7 h-7 text-red-600" />
-                                          </a>
+                                          <a href={topic.youtube_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 text-zinc-600 hover:text-rose-500 transition-colors"><Youtube className="w-5 h-5" /></a>
                                         )}
                                       </div>
-
-                                      {/* Completed Badge */}
-                                      {isTopicCompleted && (
-                                        <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-none sm:ml-2 shrink-0 self-start sm:self-auto">
-                                          Completed
-                                        </Badge>
-                                      )}
+                                      {isTopicCompleted && <span className="text-[10px] uppercase font-bold tracking-wider text-teal-500 bg-teal-500/10 px-2 py-1 rounded">Done</span>}
                                     </div>
                                   );
                                 })}
@@ -327,7 +241,7 @@ export function SyllabusPage({ userBranch, userSemester }) {
                       })}
                     </Accordion>
                   </div>
-                </Card>
+                </div>
               );
             })
           )}
