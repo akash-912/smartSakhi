@@ -96,7 +96,7 @@ export function LoginPage() {
           <div className="flex items-center gap-3 mb-8 cursor-pointer" onClick={() => navigate('/')}>
             <GalleryVerticalEnd size={32} className="text-zinc-100" strokeWidth={1.5} />
             <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-teal-400 to-emerald-500 bg-clip-text text-transparent">
-              RetroPrep
+              smartSakhi
             </span>
           </div>
           
@@ -120,7 +120,7 @@ export function LoginPage() {
           <div className="md:hidden flex items-center justify-center gap-2 mb-8" onClick={() => navigate('/')}>
             <GalleryVerticalEnd size={24} className="text-zinc-100" strokeWidth={1.5} />
             <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-teal-400 to-emerald-500 bg-clip-text text-transparent">
-              RetroPrep
+              smartSakhi
             </span>
           </div>
 
