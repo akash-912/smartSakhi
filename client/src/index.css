@@ -194,6 +194,34 @@
     }
   }
 }
+/* Custom Dark Mode GitHub Green Theme */
+.react-calendar-heatmap text {
+  font-size: 10px;
+  fill: #71717a !important; /* Muted zinc-500 text to match your labels */
+}
+
+.react-calendar-heatmap .react-calendar-heatmap-small-text {
+  font-size: 10px;
+}
+
+/* Force the empty squares to be dark gray */
+.react-calendar-heatmap .color-empty {
+  fill: #27272a !important; /* zinc-800 to blend with the card */
+  rx: 2; 
+  ry: 2;
+}
+
+/* The intensity of the green based on tasks completed */
+.react-calendar-heatmap .color-scale-1 { fill: #064e3b !important; rx: 2; ry: 2; } 
+.react-calendar-heatmap .color-scale-2 { fill: #047857 !important; rx: 2; ry: 2; } 
+.react-calendar-heatmap .color-scale-3 { fill: #10b981 !important; rx: 2; ry: 2; } 
+.react-calendar-heatmap .color-scale-4 { fill: #34d399 !important; rx: 2; ry: 2; }
+
+/* Subtle border glow on hover */
+.react-calendar-heatmap rect:hover {
+  stroke: #52525b !important;
+  stroke-width: 1px;
+}
 
 html {
   font-size: var(--font-size);

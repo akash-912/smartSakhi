@@ -1,15 +1,62 @@
+import React, { useState, useEffect } from 'react';
 import { useSyllabus } from '../features/syllabus/api/useSyllabus'; 
 import { useProgress } from '../features/syllabus/api/useProgress'; 
 import { useBranches } from '../features/syllabus/hooks/useBranches'; 
 import { CircularProgress } from '../components/ui/CircularProgress.jsx';
-import { User, Mail, GraduationCap, Calendar, Award, Book } from 'lucide-react';
+import { User, Mail, GraduationCap, Calendar, Award, Book, Activity } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select.jsx';
 import { supabase } from '../lib/supabase';
+import StudyHeatmap from '../components/ui/StudyHeatmap.jsx';// Adjust this path if needed!
 
 export function ProfilePage({ userName, userEmail, userBranch, userSemester, onBranchChange, onSemesterChange }) {
   const { branches, loading: loadingBranches } = useBranches();
   const { syllabus, loading } = useSyllabus(userBranch, userSemester);
   const { completedTopics } = useProgress();
+
+  // --- NEW STATE FOR HEATMAP ---
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [loadingHeatmap, setLoadingHeatmap] = useState(true);
+
+  // --- NEW DATA FETCHING LOGIC FOR HEATMAP ---
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Note: Change 'user_progress' to your actual table name that tracks completed topics
+        // Note: Change 'completed_at' to the timestamp column name
+        const { data, error } = await supabase
+          .from('user_progress') 
+          .select('completed_at')
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        if (data) {
+          const activityCounts = data.reduce((acc, row) => {
+            if (!row.completed_at) return acc;
+            const dateOnly = row.completed_at.split('T')[0]; // Extract YYYY-MM-DD
+            acc[dateOnly] = (acc[dateOnly] || 0) + 1;
+            return acc;
+          }, {});
+
+          const formattedData = Object.keys(activityCounts).map(date => ({
+            date: date,
+            count: activityCounts[date]
+          }));
+          
+          setHeatmapData(formattedData);
+        }
+      } catch (err) {
+        console.error("Error fetching heatmap data:", err);
+      } finally {
+        setLoadingHeatmap(false);
+      }
+    };
+
+    fetchActivity();
+  }, []);
 
   let totalTopicsGlobal = 0;
   let completedTopicsGlobal = 0;
@@ -119,6 +166,21 @@ export function ProfilePage({ userName, userEmail, userBranch, userSemester, onB
               </Select>
             </div>
           </div>
+        </div>
+
+        {/* NEW: Heatmap Consistency Graph Section */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-6">
+            <Activity className="w-5 h-5 text-teal-500" />
+            <h2 className="text-[18px] font-bold text-white">Consistency Graph</h2>
+          </div>
+          {loadingHeatmap ? (
+            <div className="p-8 text-center text-zinc-500 border border-zinc-800/60 bg-[#18181b] rounded-[1.5rem] shadow-lg">
+              <div className="animate-pulse">Loading your consistency data...</div>
+            </div>
+          ) : (
+            <StudyHeatmap data={heatmapData} />
+          )}
         </div>
 
         {/* Progress Section */}

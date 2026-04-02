@@ -9,7 +9,7 @@ import {
   BookOpen, MoreVertical, Code2, Database, Layout, Cpu, 
   Target, CalendarDays, Brain, Youtube, Flame
 } from 'lucide-react';
-
+import TerminalGame from '../features/community/components/TerminalGame.jsx';
 const getRelativeTime = (dateString) => {
   if (!dateString) return 'Just now';
   const diffInSeconds = Math.floor((new Date() - new Date(dateString)) / 1000);
@@ -56,6 +56,21 @@ export function Dashboard({ userName, userBranch, userSemester, onNavigate,openP
   const subjectsCount = syllabus ? syllabus.length : 0;
   const completedCount = completedTopics.size;
   const overallProgress = totalTopicsCount > 0 ? Math.round((completedCount / totalTopicsCount) * 100) : 0;
+  const [showTerminal, setShowTerminal] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Listen for Ctrl + Shift + K
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowTerminal(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
 
   useEffect(() => {
     const fetchRecentActivity = async () => {
@@ -270,6 +285,7 @@ export function Dashboard({ userName, userBranch, userSemester, onNavigate,openP
           </div>
         </div>
       </div>
+      {showTerminal && <TerminalGame onClose={() => setShowTerminal(false)} />}
     </div>
   );
 }
