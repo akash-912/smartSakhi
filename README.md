@@ -1,180 +1,63 @@
-# 🚀 RetroPrep
+# 📚 smartSakhi (RETROPREP)
+> **The Unified Academic & Wellness Engine for Modern Engineering Students.**
 
-RetroPrep is a premium, SaaS-style web application designed to solve the fragmentation of college life. It provides engineering students with a centralized, dark-mode workspace that merges dynamic syllabus tracking, daily execution planning, AI-powered tutoring, and a safe community forum into one cohesive platform.
+[![Live Demo](https://img.shields.io/badge/Live_Demo-smartSakhi-22c55e?style=for-the-badge&logo=vercel)](https://smart-sakhi-two.vercel.app)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-18181b?style=for-the-badge&logo=github)](https://github.com/akash-912/smartSakhi)
 
-🌐 Live Demo: https://edutrack-nitkkr-912.vercel.app/
-
-![RetroPrep Banner](screenshot.png)
-*(Note: Replace this link with an actual screenshot of your dashboard)*
-
----
-
-## ✨ Key Features
-
-### 📚 Dynamic Curriculum Engine
-
-* **Context-Aware:** Automatically filters subjects, units, and topics based on the user's specific Branch and Semester.
-* **Unified Resources:** Direct access to PDF notes, Previous Year Questions (PYQs), and curated YouTube lectures right next to the relevant topics.
-* **Gamified Progress:** Granular checkbox tracking that feeds into satisfying, dynamic circular progress rings.
-
-### 📝 Exam Planner
-
-* **Mid-Sem & End-Sem Focus:** Plan specifically for upcoming exams by selecting subject-wise and unit-wise topics.
-* **Custom Topic Selection:** Choose only the topics included in your exam syllabus.
-* **Progress Tracking:** Monitor preparation progress separately for Mid-Sem and End-Sem exams.
-* **Smart Prioritization:** Helps students focus on high-weightage and relevant topics.
-
-### ✅ Daily Execution Planner
-
-* **Slide-out Sidebar:** A persistent, glass-morphic daily task manager accessible from any page without breaking focus.
-* **Momentum Tracking:** Built-in "Show-up Streak" to encourage daily consistency.
-* **Frictionless Workflow:** One-click "Copy Yesterday's Tasks" functionality.
-
-### 🤖 AI Tutor & Evaluator
-
-* **Zero-Latency LLM:** Powered by the Groq API (Llama 3.1) for lightning-fast responses.
-* **Mock Exam Generator:** Generates custom practice papers based on specific subjects and exam types.
-* **Instant Grader:** Students can type answers to complex questions and receive a score out of 100, complete with specific strengths and areas for improvement.
-
-### 💚 Safe Space Community
-
-* **Anonymous Support:** A secure forum where students can vent, ask for advice, and support peers without stigma.
-* **AI Comfort:** An automated, empathetic AI companion that ensures no cry for help goes unanswered.
-* **Compassion Leaderboard:** A gamified system that rewards students with points when their advice is liked by the community.
-
-### ⚙️ Secure Admin Portal
-
-* **Live Database Mutations:** PIN-protected portal for college admins to dynamically inject new Branches, Subjects, and Units.
-* **Cloud Storage:** Seamless drag-and-drop interface for uploading PDFs directly to Supabase Storage buckets.
+smartSakhi is a full-stack, production-ready workspace engineered to solve the fragmentation of university resources. It centralizes dynamic syllabus tracking, AI-driven mentorship, and peer-to-peer mental wellness support into a single, highly scalable platform. 
 
 ---
 
-## 🛠 Tech Stack
+## 🚀 Impact & Engineering Highlights
 
-### Frontend
-
-* React.js (Initialized with Vite)
-* Tailwind CSS (Custom Dark Theme & Glassmorphism)
-* Framer Motion (Smooth layout animations)
-* Lucide React (Premium iconography)
-* React Router DOM (Client-side routing)
-
-### Backend & BaaS
-
-* Supabase (PostgreSQL Database)
-* Supabase Authentication
-* Supabase Storage (PDF/PYQ hosting)
-* Supabase RPC (Remote Procedure Calls for Leaderboard logic)
-
-### Artificial Intelligence
-
-* Groq API running *Llama-3.1-8b-instant*
-
-### Deployment
-
-* Vercel
+* **Scalable Relational Architecture:** Designed a highly normalized PostgreSQL database via Supabase to handle complex academic hierarchies (Branches → Semesters → Subjects → Units → Topics), ensuring rapid data retrieval over traditional NoSQL alternatives.
+* **Enterprise-Grade Security:** Implemented comprehensive Row Level Security (RLS) policies and JWT-based authentication to ensure strict data isolation and secure an exclusive Admin Portal for live curriculum mutations.
+* **AI-Powered Mentorship Engine:** Integrated a context-aware Large Language Model to power a 24/7 AI Tutor capable of generating targeted question papers, evaluating subjective answers with rigorous rubrics, and providing non-judgmental "AI Comfort" for student wellness.
+* **Gamified User Engagement:** Engineered a GitHub-style 180-day activity heatmap and a dynamic "Compassion Leaderboard" to drive daily active usage (DAU) and foster a positive, supportive peer ecosystem.
+* **Optimized Cloud Storage:** Utilized direct Supabase Storage bucket integration for seamless, low-latency hosting and retrieval of heavy academic assets (PDFs, PYQs).
 
 ---
 
-## 📁 Project Structure
+## 💡 Core Modules
 
-```
-retroprep/
-├── public/                 # Static assets
-├── src/
-│   ├── components/         # Reusable UI components (Cards, Inputs, Buttons)
-│   │   └── layout/         # MainLayout, Sidebar, Navbar
-│   ├── features/           # Feature-based modules
-│   │   ├── ai-tutor/       # AI Generation & Evaluation logic
-│   │   ├── auth/           # Supabase Auth hooks & pages
-│   │   ├── community/      # Safe Space forum components
-│   │   ├── daily-planner/  # Planner context & slide-out sidebar
-│   │   └── syllabus/       # Curriculum fetching & progress tracking
-│   ├── hooks/              # Global custom React hooks
-│   ├── lib/                # Supabase client initialization
-│   ├── pages/              # Top-level route components (Dashboard, Profile, Admin)
-│   ├── App.jsx             # Global routing and layout wrapper
-│   └── main.jsx            # React entry point
-├── .env                    # Environment variables (ignored by Git)
-├── tailwind.config.js      # Tailwind theme configuration
-└── package.json            # Project dependencies
-```
+### 1. Unified Syllabus & Progress Engine
+* Branch and semester-specific dynamic rendering.
+* Granular, topic-level progress tracking mapped directly to database relationships.
+* Centralized access to study materials, PYQs, and curated YouTube playlists.
+
+### 2. The Safe Space (Mental Wellness)
+* A secure, anonymous peer-to-peer forum mitigating academic burnout.
+* **Compassion Leaderboard:** Incentivizes positive community support through a point-based reward system.
+* **AI Comfort:** An empathetic, automated responder for immediate psychological first-aid during odd hours.
+
+### 3. Smart Planning & Analytics
+* Integrated Mid-Semester, End-Semester, and Daily task planners.
+* Real-time visual analytics, including a dynamic consistency graph and circular progress indicators.
+
+### 4. Admin Command Center
+* PIN-protected operational gateway.
+* Live database mutations for managing the curriculum engine without deploying code changes.
 
 ---
 
-## 🚀 Getting Started
+## 🛠️ Technical Stack
 
-Follow these steps to run RetroPrep locally on your machine.
+**Frontend Architecture:**
+* **Core:** React.js, Vite
+* **Styling:** Tailwind CSS (Custom Dark Premium UI)
+* **Data Visualization:** `react-calendar-heatmap` (Customized), Lucide Icons
 
-### Prerequisites
-
-* Node.js (v18 or higher)
-* A Supabase Account
-* A Groq API Key
-
-### Installation
-
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/akash-912/college-companion
-cd college-companion
-```
-
-2. **Install dependencies**
-
-```bash
-npm install
-```
-
-3. **Set up environment variables**
-   Create a `.env` file in the root directory and add:
-
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_GROQ_API_KEY=your_groq_api_key
-```
-
-4. **Run the development server**
-
-```bash
-npm run dev
-```
+**Backend & Infrastructure (BaaS):**
+* **Database:** PostgreSQL (Supabase)
+* **Authentication:** Supabase Auth (JWT)
+* **Object Storage:** Supabase Storage Bucket
+* **Deployment:** Vercel
 
 ---
 
-## 🔐 Environment Variables
+## ⚙️ Local Development Setup
 
-| Variable               | Description                  |
-| ---------------------- | ---------------------------- |
-| VITE_SUPABASE_URL      | Supabase project URL         |
-| VITE_SUPABASE_ANON_KEY | Supabase public anon key     |
-| VITE_GROQ_API_KEY      | Groq API key for AI features |
-
----
-
-## 🌟 Future Improvements
-
-* Mobile app version
-* Smart AI study planner (auto timetable generation)
-* Collaborative study rooms
-* Offline mode support
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to fork the repo and submit a pull request.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-## 💡 Acknowledgements
-
-Built with passion to simplify student life and improve academic productivity.
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/akash-912/smartSakhi.git](https://github.com/akash-912/smartSakhi.git)
+   cd smartSakhi
