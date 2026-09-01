@@ -201,7 +201,7 @@ export function LoginPage() {
 
                 <div>
                   <Label htmlFor="email" className={labelClass}>College Email</Label>
-                  <Input id="email" type="email" placeholder="student@nitkkr.ac.in" value={email} onChange={(e) => setEmail(e.target.value)} required pattern="^[0-9]+@nitkkr\.ac\.in$" title="Please enter a valid NIT Kurukshetra student email" className={inputClass} />
+                  <Input id="email" type="email" placeholder="student@nitkkr.ac.in" value={email} onChange={(e) => setEmail(e.target.value)} required  title="Please enter a valid student email" className={inputClass} />
                 </div>
 
                 <div>
